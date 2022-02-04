@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "wordle"
+version = "0.1.0"
+description = "Wordle solver"
+authors = ["James Krach"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+colorama = ">=0.4.4"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
