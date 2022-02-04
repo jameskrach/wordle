@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass
-from pprint import pprint
 from typing import Type
+
+from tabulate import tabulate
+from tqdm import tqdm
 
 from wordle.constants import GameStatus, MAX_GUESS
 from wordle.game import Game, WORD_FILE
@@ -42,13 +44,6 @@ class BenchmarkResult:
 
         return tpr
 
-    @property
-    def summary(self) -> dict[str, float]:
-        return {
-            "win_rate": self.win_rate,
-            "turns_per_win": self.turns_per_win,
-        }
-
 
 def run_benchmark(player: Type[PlayerInterface]) -> BenchmarkResult:
     with open(WORD_FILE) as f:
@@ -56,7 +51,7 @@ def run_benchmark(player: Type[PlayerInterface]) -> BenchmarkResult:
 
     b = BenchmarkResult()
 
-    for word in all_words:
+    for word in tqdm(all_words, desc=player.__name__, ncols=88):
         p = player()
         g = Game(secret_word=word)
 
@@ -77,7 +72,14 @@ def run_benchmark(player: Type[PlayerInterface]) -> BenchmarkResult:
 
 
 def main():
-    pprint({impl.__name__: run_benchmark(impl).summary for impl in player_implementations})
+    benchmark_results = {impl.__name__: run_benchmark(impl) for impl in player_implementations}
+    headers = ("Strategy", "Win Rate", "Turns/Win")
+    table = sorted(
+        ((k, v.win_rate, v.turns_per_win) for k, v in benchmark_results.items()),
+        key=lambda x: x[1],
+        reverse=True
+    )
+    print("\n" + tabulate(table, headers, tablefmt="psql") + "\n")
 
 
 if __name__ == "__main__":
