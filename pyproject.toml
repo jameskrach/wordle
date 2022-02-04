@@ -2,7 +2,7 @@
 name = "wordle"
 version = "0.1.0"
 description = "Wordle solver"
-authors = ["James Krach"]
+authors = ["James Krach <2436093-james.krach@users.noreply.gitlab.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
