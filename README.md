@@ -36,9 +36,9 @@ $ python scripts/interactive.py
 ```
 
 ## Developing a Strategy
-  1. Extend `wordle.player.PlayerInterface` by implementing a `.guess()` method (and any
-     other methods necessary for your strategy)
-  2. Add your class to the `player_implementations` variable in `scripts/benchmark.py`
+  1. Implement a `wordle.player.PlayerInterface` with a `.guess()` method (and any other
+     methods for your strategy)
+  2. Add your class to the `players` variable in `scripts/benchmark.py`
 
 To benchmark your strategy against other strategies run:
 ``` shell script

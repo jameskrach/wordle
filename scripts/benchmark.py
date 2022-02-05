@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from collections import Counter
 from dataclasses import dataclass
-from typing import Type
+from functools import cached_property
+from typing import Iterator, Type
 
 from tabulate import tabulate
 from tqdm import tqdm
@@ -11,22 +13,20 @@ from wordle.game import Game, WORD_FILE
 from wordle.player import PlayerInterface, PlayerRandom
 
 
-# Players to benchmark
-player_implementations: list[Type[PlayerInterface]] = [PlayerRandom, ]
-
-
-@dataclass
+@dataclass(frozen=True, repr=False, unsafe_hash=True)
 class BenchmarkResult:
+    outcomes: Iterator[int]
     max_guess: int = MAX_GUESS
 
-    def __post_init__(self) -> None:
-        self.outcome_freq: dict[int, int] = dict(zip(range(self.max_guess + 1), [0] * (self.max_guess + 1)))
+    @cached_property
+    def outcome_freq(self) -> Counter[int, int]:
+        c = Counter(self.outcomes)
 
-    def add_outcome(self, num_turns: int) -> None:
-        if num_turns not in self.outcome_freq:
-            raise ValueError("num_turns must be in {0, 1, ..., Maximum Number of Turns}")
+        # needs to come after potentially exhausting self.outcome
+        if not set(c).issubset(set(range(self.max_guess + 1))):
+            raise ValueError("outcomes only contain elements in {0, 1, ..., max_guess}")
 
-        self.outcome_freq[num_turns] += 1
+        return c
 
     @property
     def win_rate(self) -> float:
@@ -45,34 +45,36 @@ class BenchmarkResult:
         return tpr
 
 
-def run_benchmark(player: Type[PlayerInterface]) -> BenchmarkResult:
+def word_benchmark(player: Type[PlayerInterface], word: str) -> int:
+    p = player()
+    g = Game(secret_word=word)
+
+    game_status = GameStatus.IN_PROGRESS
+
+    while game_status == GameStatus.IN_PROGRESS:
+        guess = p.guess()
+        turn_outcome = g.handle_guess(guess)
+        p.receive_response(turn_outcome)
+        game_status = turn_outcome.game_status
+
+    if game_status == GameStatus.LOST:
+        outcome = 0
+    else:
+        outcome = MAX_GUESS - turn_outcome.turns_remaining
+
+    return outcome
+
+
+def player_benchmark(player: Type[PlayerInterface]) -> BenchmarkResult:
     with open(WORD_FILE) as f:
-        all_words = f.read().splitlines()
+        words = f.read().splitlines()
 
-    b = BenchmarkResult()
-
-    for word in tqdm(all_words, desc=player.__name__, ncols=88):
-        p = player()
-        g = Game(secret_word=word)
-
-        game_status = GameStatus.IN_PROGRESS
-
-        while game_status == GameStatus.IN_PROGRESS:
-            guess = p.guess()
-            turn_outcome = g.handle_guess(guess)
-            p.receive_response(turn_outcome)
-            game_status = turn_outcome.game_status
-
-        if game_status == GameStatus.LOST:
-            b.add_outcome(0)
-        else:
-            b.add_outcome(MAX_GUESS - turn_outcome.turns_remaining)
-
-    return b
+    return BenchmarkResult(word_benchmark(player, w) for w in tqdm(words, desc=player.__name__, ncols=88))
 
 
 def main():
-    benchmark_results = {impl.__name__: run_benchmark(impl) for impl in player_implementations}
+    players: list[Type[PlayerInterface]] = [PlayerRandom, ]
+    benchmark_results = {impl.__name__: player_benchmark(impl) for impl in players}
     headers = ("Strategy", "Win Rate", "Turns/Win")
     table = sorted(
         ((k, v.win_rate, v.turns_per_win) for k, v in benchmark_results.items()),
