@@ -31,7 +31,6 @@ def main() -> None:
         while True:
             guess = input(f"Guess {g.turn + 1} of {g.max_guess}: ")
 
-
             try:
                 turn_outcome = g.handle_guess(guess)
             except ValueError as e:
