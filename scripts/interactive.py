@@ -29,7 +29,8 @@ def main() -> None:
 
     while game_status == GameStatus.IN_PROGRESS:
         while True:
-            guess = input("Guess a word: ")
+            guess = input(f"Guess {g.turn + 1} of {g.max_guess}: ")
+
 
             try:
                 turn_outcome = g.handle_guess(guess)
