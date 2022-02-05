@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 from collections import Counter
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, partial
+from multiprocessing import cpu_count
 from typing import Iterator, Type
 
 from tabulate import tabulate
-from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from wordle.constants import GameStatus, MAX_GUESS
 from wordle.game import Game, WORD_FILE
@@ -45,16 +46,16 @@ class BenchmarkResult:
         return tpr
 
 
-def word_benchmark(player: Type[PlayerInterface], word: str) -> int:
-    p = player()
-    g = Game(secret_word=word)
+def word_benchmark(player: PlayerInterface, game: Game, word: str) -> int:
+    player.reset()
+    game.reset(secret_word=word)
 
     game_status = GameStatus.IN_PROGRESS
 
     while game_status == GameStatus.IN_PROGRESS:
-        guess = p.guess()
-        turn_outcome = g.handle_guess(guess)
-        p.receive_response(turn_outcome)
+        guess = player.guess()
+        turn_outcome = game.handle_guess(guess)
+        player.receive_response(turn_outcome)
         game_status = turn_outcome.game_status
 
     if game_status == GameStatus.LOST:
@@ -68,8 +69,11 @@ def word_benchmark(player: Type[PlayerInterface], word: str) -> int:
 def player_benchmark(player: Type[PlayerInterface]) -> BenchmarkResult:
     with open(WORD_FILE) as f:
         words = f.read().splitlines()
-
-    return BenchmarkResult(word_benchmark(player, w) for w in tqdm(words, desc=player.__name__, ncols=88))
+    p = player()
+    g = Game()
+    fn = partial(word_benchmark, p, g)
+    outcomes = process_map(fn, words, max_workers=cpu_count() - 1, desc=player.__name__, ncols=88, chunksize=100)
+    return BenchmarkResult(outcomes)
 
 
 def main():

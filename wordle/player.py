@@ -2,7 +2,6 @@
 import re
 import random
 from abc import ABC, abstractmethod
-from concurrent.futures import Executor
 from pathlib import Path
 from string import ascii_lowercase
 
@@ -17,7 +16,7 @@ class PlayerInterface(ABC):
         self.responses: list[Response] = []
         self.word_size = word_size
         self.max_guess = max_guess
-        self.turns_remaining = max_guess
+        self.turns_remaining = self.max_guess
 
         with open(word_file) as f:
             self.all_words = f.read().splitlines()
@@ -29,6 +28,12 @@ class PlayerInterface(ABC):
 
     @abstractmethod
     def guess(self) -> str:
+        """Use the player's strategy to guess the Wordle."""
+        ...
+
+    @abstractmethod
+    def reset(self) -> None:
+        """Reset the player for a new game."""
         ...
 
 
@@ -84,6 +89,13 @@ class BasePlayer(PlayerInterface):
     def letter_frequencies(self) -> dict[str, int]:
         """The frequency of letters in the remaining words that confrm to previous responses."""
         return {i: sum(1 for j in self.remaining_words if i in j) for i in self.remaining_letters}
+
+    def reset(self) -> None:
+        self.guesses: list[str] = []
+        self.responses: list[Response] = []
+        self.turns_remaining = self.max_guess
+        self._cache_guesses: list[str] = []
+        self._cache_remaining_words: list[str] = self.all_words.copy()
 
     @abstractmethod
     def guess(self) -> str:

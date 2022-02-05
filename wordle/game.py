@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass, field
 from pathlib import Path
-from random import randrange
+from random import choice
 
 from .constants import GameStatus, LetterInfo, MAX_GUESS, WORD_SIZE, WORD_FILE, Response
 
@@ -36,12 +36,20 @@ class Game:
 
     def __post_init__(self) -> None:
         with open(self.word_file) as f:
-            word_number = randrange(sum(1 for _ in f))
-            f.seek(0)
-            self.all_words = list(map(str.strip, f.readlines()))
+            self.all_words = f.read().split()
 
             if not self.secret_word:
-                self.secret_word = self.all_words[word_number]
+                self.secret_word = choice(self.all_words)
+
+    def reset(self, secret_word: str | None = None) -> None:
+        self.guesses = []
+
+        if secret_word is None:
+            self.secret_word = choice(self.all_words)
+        elif secret_word not in self.all_words:
+            raise ValueError("secret_word is not a valid word")
+        else:
+            self.secret_word = secret_word
 
     @property
     def turn(self) -> int:
