@@ -2,9 +2,9 @@
 The consequences of being [nerd sniped](https://xkcd.com/356/) by
 [wordle](https://en.wikipedia.org/wiki/Wordle). This repo contains:
   - [interactive.py](scripts/interactive.py) a script to play on the command line (with pretty colors!)
+  - [helper.py](scripts/helper.py) a script to suggest guesses
   - [benchmark.py](scripts/benchmark.py): a way to benchmark programmatic guessing strategies
   - [wordle](wordle): extendable classes useful for implementing wordle strategies  
-
 
 ## Installation
 Requires `Python 3.10+` to run and `poetry>=1.0.0` or `pip>=21.0` to install. To start,
