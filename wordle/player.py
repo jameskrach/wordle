@@ -64,16 +64,26 @@ class BasePlayer(PlayerInterface):
     @property
     def implied_regex(self) -> re.Pattern:
         """A compiled regex that matches words that conform to previous responses."""
-        in_pos = {}
+        position_parts = {i: {True: "", False: set(self.bad_letters)} for i in range(self.word_size)}
+
         for guess, response in zip(self.guesses, self.responses):
             for idx, letter_and_info in enumerate(zip(guess, response)):
                 if letter_and_info[1] == LetterInfo.IN_POSITION:
-                    in_pos[idx] = letter_and_info[0]
+                    position_parts[idx][True] = letter_and_info[0]
+                elif letter_and_info[1] == LetterInfo.IN_WORD:
+                    position_parts[idx][False].add(letter_and_info[0])
 
         if not self.bad_letters:
             pattern = ".*"
         else:
-            pattern = "".join(in_pos.get(i, f"[^{self.bad_letters}]") for i in range(self.word_size))
+            pattern = ""
+
+            for idx, mapping in position_parts.items():
+                if mapping[True]:
+                    pattern += mapping[True]
+                else:
+                    pattern += f"[^{''.join(mapping[False])}]"
+
         return re.compile(pattern)
 
     @property
@@ -87,7 +97,7 @@ class BasePlayer(PlayerInterface):
 
     @property
     def letter_frequencies(self) -> dict[str, int]:
-        """The frequency of letters in the remaining words that confrm to previous responses."""
+        """The frequency of letters in the remaining words that confirm to previous responses."""
         return {i: sum(1 for j in self.remaining_words if i in j) for i in self.remaining_letters}
 
     def reset(self) -> None:
