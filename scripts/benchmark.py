@@ -10,7 +10,7 @@ from tabulate import tabulate
 from tqdm.contrib.concurrent import process_map
 
 from wordle.constants import GameStatus, MAX_GUESS
-from wordle.game import Game, WORD_FILE
+from wordle.game import ALL_WORDS, Game
 from wordle.player import PlayerInterface, PlayerRandom
 
 
@@ -67,12 +67,10 @@ def word_benchmark(player: PlayerInterface, game: Game, word: str) -> int:
 
 
 def player_benchmark(player: Type[PlayerInterface]) -> BenchmarkResult:
-    with open(WORD_FILE) as f:
-        words = f.read().splitlines()
     p = player()
     g = Game()
     fn = partial(word_benchmark, p, g)
-    outcomes = process_map(fn, words, max_workers=cpu_count() - 1, desc=player.__name__, ncols=88, chunksize=100)
+    outcomes = process_map(fn, ALL_WORDS, max_workers=cpu_count() - 1, desc=player.__name__, ncols=88, chunksize=100)
     return BenchmarkResult(outcomes)
 
 

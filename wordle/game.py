@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass, field
-from pathlib import Path
 from random import choice
 
-from .constants import GameStatus, LetterInfo, MAX_GUESS, WORD_SIZE, WORD_FILE, Response
+from .constants import ALL_WORDS, ANSWERS, GameStatus, LetterInfo, MAX_GUESS, WORD_SIZE, Response
 
 
 @dataclass
@@ -31,22 +30,18 @@ class Game:
     max_guess: int = MAX_GUESS
     word_size: int = WORD_SIZE
     guesses: list[str] = field(default_factory=list)
-    word_file: Path = WORD_FILE
     secret_word: str | None = None
 
     def __post_init__(self) -> None:
-        with open(self.word_file) as f:
-            self.all_words = f.read().split()
-
-            if not self.secret_word:
-                self.secret_word = choice(self.all_words)
+        if not self.secret_word:
+            self.secret_word = choice(ANSWERS)
 
     def reset(self, secret_word: str | None = None) -> None:
         self.guesses = []
 
         if secret_word is None:
-            self.secret_word = choice(self.all_words)
-        elif secret_word not in self.all_words:
+            self.secret_word = choice(ANSWERS)
+        elif secret_word not in ALL_WORDS:
             raise ValueError("secret_word is not a valid word")
         else:
             self.secret_word = secret_word
@@ -60,7 +55,7 @@ class Game:
             raise ValueError("guess must only contain [a-z]")
         elif len(guess) != self.word_size:
             raise ValueError(f"guess must be {self.word_size} characters long")
-        elif guess not in self.all_words:
+        elif guess not in ALL_WORDS:
             raise ValueError("characters in guess do not form a valid word")
         else:
             pass

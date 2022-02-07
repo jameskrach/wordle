@@ -2,24 +2,20 @@
 import re
 import random
 from abc import ABC, abstractmethod
-from pathlib import Path
 from string import ascii_lowercase
 
-from .constants import MAX_GUESS, WORD_SIZE, WORD_FILE, LetterInfo, Response
+from .constants import ALL_WORDS, MAX_GUESS, WORD_SIZE, LetterInfo, Response
 from .game import TurnOutcome
 
 
 class PlayerInterface(ABC):
     """Bare minimum API that players must implement in order to play."""
-    def __init__(self, word_size: int = WORD_SIZE, max_guess: int = MAX_GUESS, word_file: Path = WORD_FILE) -> None:
+    def __init__(self, word_size: int = WORD_SIZE, max_guess: int = MAX_GUESS) -> None:
         self.guesses: list[str] = []
         self.responses: list[Response] = []
         self.word_size = word_size
         self.max_guess = max_guess
         self.turns_remaining = self.max_guess
-
-        with open(word_file) as f:
-            self.all_words = f.read().splitlines()
 
     def receive_response(self, turn_outcome: TurnOutcome) -> None:
         self.guesses.append(turn_outcome.guess)
@@ -39,10 +35,10 @@ class PlayerInterface(ABC):
 
 class BasePlayer(PlayerInterface):
     """ABC with a few methods that are likely useful to all player implementations."""
-    def __init__(self, word_size: int = WORD_SIZE, max_guess: int = MAX_GUESS, word_file: Path = WORD_FILE) -> None:
-        super().__init__(word_size=word_size, max_guess=max_guess, word_file=word_file)
+    def __init__(self, word_size: int = WORD_SIZE, max_guess: int = MAX_GUESS) -> None:
+        super().__init__(word_size=word_size, max_guess=max_guess)
         self._cache_guesses: list[str] = []
-        self._cache_remaining_words: list[str] = self.all_words.copy()
+        self._cache_remaining_words: list[str] = ALL_WORDS.copy()
 
     @property
     def bad_letters(self) -> str:
@@ -105,7 +101,7 @@ class BasePlayer(PlayerInterface):
         self.responses: list[Response] = []
         self.turns_remaining = self.max_guess
         self._cache_guesses: list[str] = []
-        self._cache_remaining_words: list[str] = self.all_words.copy()
+        self._cache_remaining_words: list[str] = ALL_WORDS.copy()
 
     @abstractmethod
     def guess(self) -> str:
@@ -114,8 +110,8 @@ class BasePlayer(PlayerInterface):
 
 class PlayerRandom(BasePlayer):
     """A first attempt at a player with a guessing strategy."""
-    def __init__(self, word_size: int = WORD_SIZE, max_guess: int = MAX_GUESS, word_file: Path = WORD_FILE) -> None:
-        super().__init__(word_size=word_size, max_guess=max_guess, word_file=word_file)
+    def __init__(self, word_size: int = WORD_SIZE, max_guess: int = MAX_GUESS) -> None:
+        super().__init__(word_size=word_size, max_guess=max_guess)
 
     def guess(self) -> str:
         return random.choice(self.remaining_words)
